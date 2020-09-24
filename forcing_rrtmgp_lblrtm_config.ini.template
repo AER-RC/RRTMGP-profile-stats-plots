@@ -1,0 +1,17 @@
+[Plot Params]
+test_model =
+test_forcing_model = XYZ
+test_description =
+reference_model =
+reference_forcing_model = XYZ
+reference_description =
+atmosphere = XYZ
+
+[Filename Params]
+test_path = XYZ
+reference_path = XYZ
+test_force_path = XYZ
+reference_force_path = XYZ
+profiles_prefix = XYZ
+stats_prefix = XYZ
+stats_csv = XYZ
