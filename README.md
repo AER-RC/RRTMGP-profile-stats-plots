@@ -50,6 +50,24 @@ optional arguments:
   --broad_only          Only generate a broadband plot.
 ```
 
+# Parallelizing Jobs
+
+To speed up the very time consuming job of plotting the profile errors, a module that uses multithreading has been written. The number of available cores, _N_, that can be used can be deduced with:
+
+```
+./pool_LBLRTM_RRTMGP_compare.py --config_file LBLRTM_RRTMGP_config.ini -ac
+```
+
+Then, something less than _N_ can be used in farming out all of the jobs:
+
+```
+./pool_LBLRTM_RRTMGP_compare.py --config_file LBLRTM_RRTMGP_config.ini -p -c 10
+```
+
+**Note**: jobs are only parallelized over bands (including broadband), not profiles.
+
+**Note**: stats plots are not parallelized.
+
 # Forcing
 
 To be continued...
