@@ -71,3 +71,43 @@ Then, something less than _N_ can be used in farming out all of the jobs:
 # Forcing
 
 To be continued...
+
+# Bands
+
+For reference, these are the wavenumber limits for each band (from `mo_band_wavenumbers.f90`, which has been removed from version control):
+
+| LW Band Number | _v<sub>1</sub>_ [cm<sup>-1</sup>] | _v<sub>2</sub>_ [cm<sup>-1</sup>] |
+| :---: | :---: | :---: |
+| 1 | 10 | 250 |
+| 2 | 250 | 500 |
+| 3 | 500 | 630 |
+| 4 | 630 | 700 |
+| 5 | 700 | 820 |
+| 6 | 820 | 980 |
+| 7 | 980 | 1080 |
+| 8 | 1080 | 1180 |
+| 9 | 1180 | 1390 |
+| 10 | 1390 | 1480 |
+| 11 | 1480 | 1800 |
+| 12 | 1800 | 2080 |
+| 13 | 2080 | 2250 |
+| 14 | 2250 | 2390 |
+| 15 | 2390 | 2680 |
+| 16 | 2680 | 3250 |
+
+| SW Band Number | _v<sub>1</sub>_ [cm<sup>-1</sup>] | _v<sub>2</sub>_ [cm<sup>-1</sup>] |
+| :---: | :---: | :---: |
+| 1 | 820 | 2600 |
+| 2 | 2600 | 3250 |
+| 3 | 3250 | 4000 |
+| 4 | 4000 | 4650 |
+| 5 | 4650 | 5150 |
+| 6 | 5150 | 6150 |
+| 7 | 6150 | 7700 |
+| 8 | 7700 | 8050 |
+| 9 | 8050 | 12850 |
+| 10 | 12850 | 16000 |
+| 11 | 16000 | 22650 |
+| 12 | 22650 | 29000 |
+| 13 | 29000 | 38000 |
+| 14 | 38000 | 50000 |
