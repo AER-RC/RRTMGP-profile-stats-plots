@@ -18,7 +18,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 import utils
 
 # default attributes to extract from input netCDFs
-DEFATTR = ['dimensions', 'band_wavenumbers', 'emis_sfc', 'p_lay', \
+DEFATTR = ['dimensions', 'band_lims_wvn', 'emis_sfc', 'p_lay', \
   'p_lev', 't_lay', 't_lev', 't_sfc', 'vmr_h2o', 'vmr_co2', \
   'vmr_o3', 'vmr_ch4', 'vmr_co', 'vmr_n2o', 'vmr_o2', 'vmr_n2']
 
@@ -287,7 +287,7 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
 
   # get the output for plotting
   plotVars = ['band_flux_up', 'band_flux_dn', 'band_heating_rate', \
-    'p_lay', 'p_lev', 'band_wavenumbers']
+    'p_lay', 'p_lev', 'band_lims_wvn']
   plotTitle = ['Upward Flux', 'Downward Flux', 'Heating Rate', \
     'Pressure (mbar)', 'Pressure (mbar)', 'Wavenumber Range']
   dum = plotVars[1]
@@ -339,11 +339,11 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
     if (band == nBand) and (nBand > 1):
       # broadband page
       outFile = '%s/%s_broadband.pdf' % (outDir, prefix)
-      wnRange = [refDict['band_wavenumbers'][0, 0],
-                 refDict['band_wavenumbers'][1, nBand-1]]
+      wnRange = [refDict['band_lims_wvn'][0, 0],
+                 refDict['band_lims_wvn'][nBand-1, 1]]
     else:
       outFile = '%s/%s_%02d.pdf' % (outDir, prefix, band+1)
-      wnRange = refDict['band_wavenumbers'][:, band]
+      wnRange = refDict['band_lims_wvn'][band, :]
     # endif broadband
 
     pdf = PdfPages(outFile)
@@ -697,15 +697,15 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
 
     if broadband:
       print('Processing broadband')
-      wnRange = [dictRef['band_wavenumbers'][0, 0],\
-                 dictRef['band_wavenumbers'][-1, -1]]
+      wnRange = [dictRef['band_lims_wvn'][0, 0],\
+                 dictRef['band_lims_wvn'][-1, -1]]
 
       # not sure how Pythonic this is, but it works for
       # broadband indexing (mostly)
       bandNum = None
     else:
       print('Processing Band %d' % (bandNum + 1))
-      wnRange = dictRef['band_wavenumbers'][:, bandNum]
+      wnRange = dictRef['band_lims_wvn'][bandNum, :]
     # endif broadband
 
     # ordinate values (Test - Reference residuals)
@@ -858,7 +858,7 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
   # START OF statPDF()
   # get the output for plotting
   plotVars = ['band_flux_up', 'band_flux_dn', 'band_heating_rate', \
-    'band_flux_net', 'p_lay', 'p_lev', 'band_wavenumbers']
+    'band_flux_net', 'p_lay', 'p_lev', 'band_lims_wvn']
   diffVars = plotVars[:4]
   dum = plotVars[1]
   refDict = getVars(ref, attrList=plotVars)
@@ -910,7 +910,7 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
 
   # broadband params calculation and plotting
   plotVars = ['flux_up', 'flux_dn', 'heating_rate', 'flux_net', \
-    'band_wavenumbers', 'p_lay']
+    'band_lims_wvn', 'p_lay']
   diffVars = plotVars[:4]
   refDict = getVars(ref, attrList=plotVars)
   testDict = getVars(test, attrList=plotVars)
