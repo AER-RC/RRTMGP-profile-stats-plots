@@ -93,7 +93,8 @@ def readConfigFile(conFile):
   return outDict
 # end readConfigFile()
 
-def getVars(ncFile, attrList=DEFATTR, configDesc=None, flipNet=False):
+def getVars(ncFile, attrList=DEFATTR, configDesc=None,
+  iForce=0, flipNet=False, convertHR=False):
   """
   Reads in netCDF file and returns a dictionary with the specified
   netCDF attributes
@@ -116,7 +117,11 @@ def getVars(ncFile, attrList=DEFATTR, configDesc=None, flipNet=False):
     configDesc -- string, model description from the input
       configuration file, which supercedes the model description in
       the netCDF global attributes
+    iForce -- int, index of forcing scenario to use
     flipNet -- boolean; flip the sign of net fluxes for LBLRTM
+    convertHR -- boolean; LBLRTM HR units are K/s, but RRTMGP units
+      are K/day; setting this keyword assumes a K/s to K/day
+      conversion needs to be applied
   """
 
   # create netCDF object
@@ -126,23 +131,19 @@ def getVars(ncFile, attrList=DEFATTR, configDesc=None, flipNet=False):
   # initialize output (this dictionary is dynamic and
   # dependent on attrList)
   outDict = {}
-  # Handling LBLRTM net change outside of python now
-  flipNet=False
   for attr in attrList:
     # for default, only "dimensions" will not be processed
     if not attr in ncObj.variables.keys(): continue
 
     if (attr == 'p_lev') or (attr == 'p_lay'):
       # Pa to mbar conversion
-      outDict[attr] = np.array(ncObj.variables[attr]) / 100.0
+      outDict[attr] = np.array(ncObj.variables[attr][iForce]) / 100.0
     elif 'heating_rate' in attr:
       # K/s to K/day conversion
-      outDict[attr] = np.array(ncObj.variables[attr]) * 86400
-    #elif 'flux_net' in attr and 'lblrtm' in ncFile and flipNet:
-    #  # flip the LBLRTM flux for Jen
-    #  outDict[attr] = np.array(ncObj.variables[attr]) * -1
+      convert = 86400 if convertHR else 1
+      outDict[attr] = np.array(ncObj.variables[attr][iForce]) * convert
     else:
-      outDict[attr] = np.array(ncObj.variables[attr])
+      outDict[attr] = np.array(ncObj.variables[attr][iForce])
   # end loop over attributes
 
   if configDesc is None:
@@ -291,12 +292,9 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
   plotTitle = ['Upward Flux', 'Downward Flux', 'Heating Rate', \
     'Pressure (mbar)', 'Pressure (mbar)', 'Wavenumber Range']
   dum = plotVars[1]
-  refDict = getVars(refFile, attrList=plotVars)
+  refDict = getVars(refFile, attrList=plotVars, convertHR=True)
   testDict = getVars(testFile, attrList=plotVars)
   # some quality control (consistency check)
-  if refDict[dum].shape != testDict[dum].shape:
-    sys.exit('%s and %s do not have equal dimensions, returning' % \
-      refFile, testFile)
 
   # grab dimensions of variables
   varShape = refDict[dum].shape
@@ -861,7 +859,7 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
     'band_flux_net', 'p_lay', 'p_lev', 'band_lims_wvn']
   diffVars = plotVars[:4]
   dum = plotVars[1]
-  refDict = getVars(ref, attrList=plotVars)
+  refDict = getVars(ref, attrList=plotVars, convertHR=True)
   testDict = getVars(test, attrList=plotVars)
 
   # some quality control (consistency check)
@@ -912,7 +910,7 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
   plotVars = ['flux_up', 'flux_dn', 'heating_rate', 'flux_net', \
     'band_lims_wvn', 'p_lay']
   diffVars = plotVars[:4]
-  refDict = getVars(ref, attrList=plotVars)
+  refDict = getVars(ref, attrList=plotVars, convertHR=True)
   testDict = getVars(test, attrList=plotVars)
   diffCalc(refDict, testDict, 0, nCol, diffVars, \
     pBoundary=tPauseP, csv=statCSV, broadband=True)
