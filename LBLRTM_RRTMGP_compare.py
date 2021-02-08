@@ -134,16 +134,25 @@ def getVars(ncFile, attrList=DEFATTR, configDesc=None,
   for attr in attrList:
     # for default, only "dimensions" will not be processed
     if not attr in ncObj.variables.keys(): continue
+    # If this is an new-style file, first variable will be record, unlimited dimension
+    # If this is an old-style file, record will not be first dimension
+    # Simply checking for record
+    # TODO: This is the reason for the branch. Eventually resolve.
+    first_dim = ncObj.variables[attr].dimensions[0]
+    if first_dim == 'record':
+        ncObjTmp = ncObj.variables[attr][iForce]
+    else:
+        ncObjTmp = ncObj.variables[attr]
 
     if (attr == 'p_lev') or (attr == 'p_lay'):
       # Pa to mbar conversion
-      outDict[attr] = np.array(ncObj.variables[attr][iForce]) / 100.0
+      outDict[attr] = np.array(ncObjTmp) / 100.0
     elif 'heating_rate' in attr:
       # K/s to K/day conversion
       convert = 86400 if convertHR else 1
-      outDict[attr] = np.array(ncObj.variables[attr][iForce]) * convert
+      outDict[attr] = np.array(ncObjTmp) * convert
     else:
-      outDict[attr] = np.array(ncObj.variables[attr][iForce])
+      outDict[attr] = np.array(ncObjTmp)
   # end loop over attributes
 
   if configDesc is None:
