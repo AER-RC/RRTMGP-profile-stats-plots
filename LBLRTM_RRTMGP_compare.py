@@ -295,25 +295,31 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
       logy -- boolean, plots with a log-y axis rather than linear
   """
 
+  # broadband params calculation and plotting
+  plotVarsBB = ['flux_up', 'flux_dn', 'heating_rate', 'flux_net', \
+    'band_lims_wvn', 'p_lay']
+  broadDictRef = getVars(ref, attrList=plotVarsBB, convertHR=True)
+  broadDictTest = getVars(test, attrList=plotVarsBB, convertHR=True)
+
   # get the output for plotting
   plotVars = ['band_flux_up', 'band_flux_dn', 'band_heating_rate', \
     'p_lay', 'p_lev', 'band_lims_wvn']
   plotTitle = ['Upward Flux', 'Downward Flux', 'Heating Rate', \
     'Pressure (mbar)', 'Pressure (mbar)', 'Wavenumber Range']
   dum = plotVars[1]
-  refDict = getVars(refFile, attrList=plotVars, convertHR=True)
-  testDict = getVars(testFile, attrList=plotVars)
+
+  refDict = getVars(ref, attrList=plotVars, convertHR=True)
+  testDict = getVars(test, attrList=plotVars, convertHR=True)
   # some quality control (consistency check)
 
-  # grab dimensions of variables
+    # grab dimensions of variables
   varShape = refDict[dum].shape
   nBand = varShape[2]; nCol = varShape[1]
 
-  # broadband fluxes initialization
-  broadDictRef, broadDictTest = {}, {}
+  # replace broadband names with "band" in broadband dictionaries (ew)
   for pVar in plotVars[:3]:
-    broadDictRef[pVar] = None
-    broadDictTest[pVar] = None
+    broadDictRef[pVar] = broadDictRef.pop(pVar.replace('band_', ''))
+    broadDictTest[pVar] = broadDictTest.pop(pVar.replace('band_', ''))
   # end broadband initialize
 
   # if inBand is not specified, cover all bands and include a
@@ -321,24 +327,6 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
   bandList = range(nBand+1) if inBand is None else [inBand]
   for band in bandList:
     print('Band %d' % (band+1))
-
-    # broadband integration -- each key is initialized and incremented
-    # together for ref and test (so ref 'up' conditional should
-    # suffice rather than a conditional for all ref and test keys)
-    # perhaps a more Pythonic way to do this?
-    if (broadDictRef['band_flux_up'] is None):
-      for pVar in plotVars[:3]:
-        broadDictRef[pVar] = refDict[pVar][:, :, band]
-        broadDictTest[pVar] = testDict[pVar][:, :, band]
-      # end broadband assign
-    else:
-      for pVar in plotVars[:3]:
-        # no further increments needed if in the broadband iteration
-        if (band == nBand) and (nBand > 1): break
-        broadDictRef[pVar] += refDict[pVar][:, :, band]
-        broadDictTest[pVar] += testDict[pVar][:, :, band]
-      # end broadband increment
-    # endif broadband
 
     if broadOnly and (band < nBand): continue
 
@@ -869,7 +857,7 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
   diffVars = plotVars[:4]
   dum = plotVars[1]
   refDict = getVars(ref, attrList=plotVars, convertHR=True)
-  testDict = getVars(test, attrList=plotVars)
+  testDict = getVars(test, attrList=plotVars, convertHR=True)
 
   # some quality control (consistency check)
   if refDict[dum].shape != testDict[dum].shape:
@@ -920,7 +908,7 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
     'band_lims_wvn', 'p_lay']
   diffVars = plotVars[:4]
   refDict = getVars(ref, attrList=plotVars, convertHR=True)
-  testDict = getVars(test, attrList=plotVars)
+  testDict = getVars(test, attrList=plotVars, convertHR=True)
   diffCalc(refDict, testDict, 0, nCol, diffVars, \
     pBoundary=tPauseP, csv=statCSV, broadband=True)
 
