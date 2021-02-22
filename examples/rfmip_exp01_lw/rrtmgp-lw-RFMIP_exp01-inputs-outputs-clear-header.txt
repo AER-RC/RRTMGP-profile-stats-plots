@@ -1,0 +1,53 @@
+netcdf rrtmgp-lw-RFMIP_exp01-inputs-outputs-clear-1ang {
+dimensions:
+	angle = 1 ;
+	lev = 61 ;
+	col = 100 ;
+	band = 16 ;
+	lay = 60 ;
+	pair = 2 ;
+variables:
+	double band_flux_dn(lev, col, band) ;
+	double band_flux_net(lev, col, band) ;
+	double band_flux_up(lev, col, band) ;
+	double band_heating_rate(lay, col, band) ;
+	int band_lims_gpt(band, pair) ;
+	double band_lims_wvn(band, pair) ;
+	float col_dry(lay, col) ;
+	float emis_sfc(col, band) ;
+		emis_sfc:units = "" ;
+	double flux_dn(lev, col) ;
+	double flux_net(lev, col) ;
+	double flux_up(lev, col) ;
+	double heating_rate(lay, col) ;
+	float p_lay(lay, col) ;
+		p_lay:units = "Pa" ;
+	float p_lev(lev, col) ;
+		p_lev:units = "Pa" ;
+	float t_lay(lay, col) ;
+		t_lay:units = "K" ;
+	float t_lev(lev, col) ;
+		t_lev:units = "K" ;
+	float t_sfc(col) ;
+		t_sfc:units = "K" ;
+	float vmr_ch4(lay, col) ;
+		vmr_ch4:units = "" ;
+	float vmr_co(lay, col) ;
+		vmr_co:units = "" ;
+	float vmr_co2(lay, col) ;
+		vmr_co2:units = "" ;
+	float vmr_h2o(lay, col) ;
+		vmr_h2o:units = "" ;
+	float vmr_n2(lay, col) ;
+		vmr_n2:units = "" ;
+	float vmr_n2o(lay, col) ;
+		vmr_n2o:units = "" ;
+	float vmr_o2(lay, col) ;
+		vmr_o2:units = "" ;
+	float vmr_o3(lay, col) ;
+		vmr_o3:units = "" ;
+
+// global attributes:
+		:history = "Mon Feb 22 10:01:36 2021: ncap2 -s defdim(\"angle\",1) rrtmgp-lw-RFMIP_exp01-inputs-outputs-clear-staging.nc rrtmgp-lw-RFMIP_exp01-inputs-outputs-clear-1ang.nc\nMon Feb 22 08:11:16 2021: ncks -O -x -v angle test.nc testa.nc" ;
+		:NCO = "netCDF Operators version 4.9.7 (Homepage = http://nco.sf.net, Code = http://github.com/nco/nco)" ;
+}
