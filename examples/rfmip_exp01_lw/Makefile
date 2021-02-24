@@ -2,11 +2,6 @@
 # Need to set variables RRTMGP_ROOT, FC, FCGLAGS
 # e.g. export FC=ifort; export FCFLAGS='-m64 -O3 -traceback -assume realloc_lhs -extend-source 132 -qopt-report-phase=vec'
 #
-NCHOME = /usr/local/Cellar/netcdf/4.7.4_2/
-NFHOME = /usr/local/Cellar/netcdf/4.7.4_2/
-RRTMGP_ROOT = /Users/jsdelamere/Projects/rrtmgp/git/RRTMGP/local-install-master
-FCFLAGS = -ffree-line-length-none -m64 -std=f2008 -march=native -pedantic -g -fbounds-check -Wall -fbacktrace -finit-real=nan -DUSE_CBOOL
-FC = gfortran
 
 #
 # Location of RTE+RRTMGP libraries, module files.
@@ -42,13 +37,15 @@ ADDITIONS += mo_fluxes_byband.o mo_fluxes_byband_kernels.o
 #
 # Targets
 #
-all: rrtmgp_lw_RFMIP_exp01_atmos
+all: rrtmgp_lw_RFMIP_exp01_atmos_quadang rrtmgp_lw_RFMIP_exp01_atmos_optang
 
-rrtmgp_lw_RFMIP_exp01_atmos: $(ADDITIONS) rrtmgp_lw_RFMIP_exp01_atmos.o
-rrtmgp_lw_RFMIP_exp01_atmos.o:  rrtmgp_lw_RFMIP_exp01_atmos.F90 $(ADDITIONS)
+rrtmgp_lw_RFMIP_exp01_atmos_optang: $(ADDITIONS) rrtmgp_lw_RFMIP_exp01_atmos_optang.o
+rrtmgp_lw_RFMIP_exp01_atmos_optang.o:  rrtmgp_lw_RFMIP_exp01_atmos_optang.F90 $(ADDITIONS)
+rrtmgp_lw_RFMIP_exp01_atmos_quadang: $(ADDITIONS) rrtmgp_lw_RFMIP_exp01_atmos_quadang.o
+rrtmgp_lw_RFMIP_exp01_atmos_quadang.o:  rrtmgp_lw_RFMIP_exp01_atmos_quadang.F90 $(ADDITIONS)
 mo_fluxes_byband.o:     mo_fluxes_byband.F90 mo_fluxes_byband_kernels.o
 mo_load_coefficients.o: mo_load_coefficients.F90 mo_simple_netcdf.o
 mo_process_atmosfiles_io.o:   mo_process_atmosfiles_io.F90 mo_simple_netcdf.o
 
 clean:
-	-rm ../rrtmgp_lw_RFMIP_exp01_atmos *.o *.mod *.optrpt
+	-rm ../rrtmgp_lw_RFMIP_exp01_atmos_quadang ../rrtmgp_lw_RFMIP_exp01_atmos_optang *.o *.mod *.optrpt
