@@ -149,6 +149,9 @@ def getVars(ncFile, attrList=DEFATTR, configDesc=None,
       outDict[attr] = np.array(ncObjTmp) / 100.0
     elif 'heating_rate' in attr:
       # K/s to K/day conversion
+      hru = ncObjTmp.units
+      if hru not in ['K/s']:
+          sys.exit("Heating Rate Units not as expected [K/s]")
       convert = 86400 if convertHR else 1
       outDict[attr] = np.array(ncObjTmp) * convert
     else:
@@ -1036,6 +1039,8 @@ if __name__ == '__main__':
     help='Generate a semilog-y plot.')
   parser.add_argument('--broad_only', action='store_true', \
     help='Only generate a broadband plot.')
+  parser.add_argument('--hr_kday', action='store_true', \
+    help='Heating rate plot generated in units K/day (standard units are K/sec).')
   args = parser.parse_args()
 
   conFile = args.config_file
@@ -1059,19 +1064,21 @@ if __name__ == '__main__':
     if inBand is None:
       profPDFs(refFile, testFile, yt, tPauseP=pTrop, \
         prefix=profPrefix, atmType=aType, inBand=inBand, \
-        yLog=args.log_y, broadOnly=args.broad_only)
+        yLog=args.log_y, broadOnly=args.broad_only, \
+        hrUnits=args.hr_kday)
     else:
       for iBand in inBand:
         profPDFs(refFile, testFile, yt, tPauseP=pTrop, \
           prefix=profPrefix, atmType=aType, inBand=iBand, \
-          yLog=args.log_y)
+          yLog=args.log_y, hrUnits=args.hr_kday)
       # end iBand loop
 
       # for specified bands AND broadband
       if args.broad_only:
         profPDFs(refFile, testFile, yt, tPauseP=pTrop, \
           prefix=profPrefix, atmType=aType, \
-          yLog=args.log_y, broadOnly=args.broad_only)
+          yLog=args.log_y, broadOnly=args.broad_only, \
+          hrUnits=args.hr_kday)
       # end broadband plot
     # end inBand
   # end plot_profiles
@@ -1080,6 +1087,7 @@ if __name__ == '__main__':
   if args.plot_stats:
     statPDF(refFile, testFile, singlePDF=args.single_stat, \
       tPauseP=pTrop, xTitle=xt, yTitle=yt, prefix=statPrefix, \
-      atmType=aType, statCSV=statCSV, forcing=forcing)
+      atmType=aType, statCSV=statCSV, forcing=forcing, \
+      hrUnits=args.hr_kday)
 
 # end main()
