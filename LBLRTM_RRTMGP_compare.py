@@ -150,11 +150,11 @@ def getVars(ncFile, attrList=DEFATTR, configDesc=None,
       # K/s to K/day conversion
       # units must be present in netCDF file on these variables
       try:
-          hru = ncObjTmp.units
+        hru = ncObj.variables[attr].units
       except:
-          sys.exit("Check heating rates units defined as K/s (exactly)"
-      if hru not in ['K/s']:
-         sys.exit("Heating rate units not as expected [K/s]")
+        sys.exit("Heating rates units not defined in netCDF")
+      if hru != 'K/s':
+        sys.exit("Heating rate units not as expected [K/s]", hru)
       convert = 86400 if convertHR else 1
       outDict[attr] = np.array(ncObjTmp) * convert
     else:
@@ -299,6 +299,7 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
 
     **kwargs -- overloaded arguments
       logy -- boolean, plots with a log-y axis rather than linear
+      hrUnits -- boolean, convert heating rate units to K/day
   """
   # broadband params calculation and plotting
   plotVarsBB = ['flux_up', 'flux_dn', 'heating_rate', 'flux_net', \
@@ -394,7 +395,7 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
             units = '[W m$^{-2}$]' if shortWave else '[W m$^{-2}$]'
             tempVar = 'Flux'
           else:
-            units = '[K day$^{-1}$]'
+            units = '[K day$^{-1}$]' if kwargs['hrUnits'] else '[K sec$^{-1}$]'
             tempVar = 'HR'
           # end units and tempVar
 
@@ -479,7 +480,8 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
 
 def plotStats(residuals, reference, rmsArr, pdf='temp.pdf', \
   figTitle='Garand Atmospheres', shortWave=False, pdfObj=None, \
-  xTitle='LBLRTM', yTitle='RRTMGP - LBLRTM', forcing=True):
+  xTitle='LBLRTM', yTitle='RRTMGP - LBLRTM', \
+  hrUnits=False,forcing=True):
   """
   Plot each array in the dictionaries generated with statPDF() in a
   separate panel and calculate statistics for each panel
@@ -588,7 +590,10 @@ def plotStats(residuals, reference, rmsArr, pdf='temp.pdf', \
     if 'flux' in key:
       units = '[W m$^{-2}$]' if shortWave else '[W m$^{-2}$]'
     elif 'heating_rate' in key:
-      units = '[K day$^{-1}$]'
+      if hrUnits:
+        units = '[K day$^{-1}$]'
+      else:
+        units = '[K sec$^{-1}$]'
     else:
       units = ''
 
@@ -852,7 +857,8 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
     # them into this function
     plotStats(deltaDict, refPlotDict, allRMS, pdf=outFile, \
       figTitle=fTitle, pdfObj=pdf, forcing=kwargs['forcing'], \
-      xTitle=kwargs['xTitle'], yTitle=kwargs['yTitle'])
+      xTitle=kwargs['xTitle'], yTitle=kwargs['yTitle'], \
+      hrUnits=kwargs['yTitle'])
   # end diffCalc()
 
   # START OF statPDF()
