@@ -148,9 +148,13 @@ def getVars(ncFile, attrList=DEFATTR, configDesc=None,
       outDict[attr] = np.array(ncObjTmp) / 100.0
     elif 'heating_rate' in attr:
       # K/s to K/day conversion
-      hru = ncObjTmp.units
+      # units must be present in netCDF file on these variables
+      try:
+          hru = ncObjTmp.units
+      except:
+          sys.exit("Check heating rates units defined as K/s (exactly)"
       if hru not in ['K/s']:
-          sys.exit("Heating Rate Units not as expected [K/s]")
+         sys.exit("Heating rate units not as expected [K/s]")
       convert = 86400 if convertHR else 1
       outDict[attr] = np.array(ncObjTmp) * convert
     else:
