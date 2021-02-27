@@ -119,9 +119,8 @@ def getVars(ncFile, attrList=DEFATTR, configDesc=None,
       the netCDF global attributes
     iForce -- int, index of forcing scenario to use
     flipNet -- boolean; flip the sign of net fluxes for LBLRTM
-    convertHR -- boolean; LBLRTM HR units are K/s, but RRTMGP units
-      are K/day; setting this keyword assumes a K/s to K/day
-      conversion needs to be applied
+    convertHR -- boolean; LBLRTM and RRTMGP HR units are
+      expected in K/s; setting this keyword converts HR to K/day.
   """
 
   # create netCDF object
@@ -190,7 +189,7 @@ def getVars(ncFile, attrList=DEFATTR, configDesc=None,
 
 def plotProfiles(refVar, testVar, ordinate, plotDelta=False, \
   pTitle='', xTitle='', yTitle='', tPauseP=100.0, plotMean=False, \
-  yLog=False):
+  yLog=False, hrUnits=False):
 
   """
   Single case of what is done in profPDFs
@@ -297,12 +296,11 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
     **kwargs -- overloaded arguments
       logy -- boolean, plots with a log-y axis rather than linear
   """
-
   # broadband params calculation and plotting
   plotVarsBB = ['flux_up', 'flux_dn', 'heating_rate', 'flux_net', \
     'band_lims_wvn', 'p_lay']
-  broadDictRef = getVars(ref, attrList=plotVarsBB, convertHR=True)
-  broadDictTest = getVars(test, attrList=plotVarsBB, convertHR=True)
+  broadDictRef = getVars(ref, attrList=plotVarsBB, convertHR=kwargs['hrUnits'])
+  broadDictTest = getVars(test, attrList=plotVarsBB, convertHR=kwargs['hrUnits'])
 
   # get the output for plotting
   plotVars = ['band_flux_up', 'band_flux_dn', 'band_heating_rate', \
@@ -311,8 +309,8 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
     'Pressure (mbar)', 'Pressure (mbar)', 'Wavenumber Range']
   dum = plotVars[1]
 
-  refDict = getVars(ref, attrList=plotVars, convertHR=True)
-  testDict = getVars(test, attrList=plotVars, convertHR=True)
+  refDict = getVars(ref, attrList=plotVars, convertHR=kwargs['hrUnits'])
+  testDict = getVars(test, attrList=plotVars, convertHR=kwargs['hrUnits'])
   # some quality control (consistency check)
 
     # grab dimensions of variables
@@ -857,6 +855,7 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
   # get the output for plotting
   plotVars = ['band_flux_up', 'band_flux_dn', 'band_heating_rate', \
     'band_flux_net', 'p_lay', 'p_lev', 'band_lims_wvn']
+
   diffVars = plotVars[:4]
   dum = plotVars[1]
   refDict = getVars(ref, attrList=plotVars, convertHR=True)
@@ -1042,7 +1041,6 @@ if __name__ == '__main__':
   parser.add_argument('--hr_kday', action='store_true', \
     help='Heating rate plot generated in units K/day (standard units are K/sec).')
   args = parser.parse_args()
-
   conFile = args.config_file
   pTrop = args.tropopause_pressure
 
