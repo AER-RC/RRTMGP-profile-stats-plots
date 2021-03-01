@@ -119,9 +119,8 @@ def getVars(ncFile, attrList=DEFATTR, configDesc=None,
       the netCDF global attributes
     iForce -- int, index of forcing scenario to use
     flipNet -- boolean; flip the sign of net fluxes for LBLRTM
-    convertHR -- boolean; LBLRTM HR units are K/s, but RRTMGP units
-      are K/day; setting this keyword assumes a K/s to K/day
-      conversion needs to be applied
+    convertHR -- boolean; LBLRTM and RRTMGP HR units are
+      expected in K/s; setting this keyword converts HR to K/day.
   """
 
   # create netCDF object
@@ -149,6 +148,13 @@ def getVars(ncFile, attrList=DEFATTR, configDesc=None,
       outDict[attr] = np.array(ncObjTmp) / 100.0
     elif 'heating_rate' in attr:
       # K/s to K/day conversion
+      # units must be present in netCDF file on these variables
+      try:
+        hru = ncObj.variables[attr].units
+      except:
+        sys.exit("Heating rates units not defined in netCDF")
+      if hru != 'K/s':
+        sys.exit("Heating rate units not as expected [K/s]", hru)
       convert = 86400 if convertHR else 1
       outDict[attr] = np.array(ncObjTmp) * convert
     else:
@@ -187,7 +193,7 @@ def getVars(ncFile, attrList=DEFATTR, configDesc=None,
 
 def plotProfiles(refVar, testVar, ordinate, plotDelta=False, \
   pTitle='', xTitle='', yTitle='', tPauseP=100.0, plotMean=False, \
-  yLog=False):
+  yLog=False, hrUnits=False):
 
   """
   Single case of what is done in profPDFs
@@ -293,13 +299,13 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
 
     **kwargs -- overloaded arguments
       logy -- boolean, plots with a log-y axis rather than linear
+      hrUnits -- boolean, convert heating rate units to K/day
   """
-
   # broadband params calculation and plotting
   plotVarsBB = ['flux_up', 'flux_dn', 'heating_rate', 'flux_net', \
     'band_lims_wvn', 'p_lay']
-  broadDictRef = getVars(ref, attrList=plotVarsBB, convertHR=True)
-  broadDictTest = getVars(test, attrList=plotVarsBB, convertHR=True)
+  broadDictRef = getVars(ref, attrList=plotVarsBB, convertHR=kwargs['hrUnits'])
+  broadDictTest = getVars(test, attrList=plotVarsBB, convertHR=kwargs['hrUnits'])
 
   # get the output for plotting
   plotVars = ['band_flux_up', 'band_flux_dn', 'band_heating_rate', \
@@ -308,8 +314,8 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
     'Pressure (mbar)', 'Pressure (mbar)', 'Wavenumber Range']
   dum = plotVars[1]
 
-  refDict = getVars(ref, attrList=plotVars, convertHR=True)
-  testDict = getVars(test, attrList=plotVars, convertHR=True)
+  refDict = getVars(ref, attrList=plotVars, convertHR=kwargs['hrUnits'])
+  testDict = getVars(test, attrList=plotVars, convertHR=kwargs['hrUnits'])
   # some quality control (consistency check)
 
     # grab dimensions of variables
@@ -389,7 +395,7 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
             units = '[W m$^{-2}$]' if shortWave else '[W m$^{-2}$]'
             tempVar = 'Flux'
           else:
-            units = '[K day$^{-1}$]'
+            units = '[K day$^{-1}$]' if kwargs['hrUnits'] else '[K sec$^{-1}$]'
             tempVar = 'HR'
           # end units and tempVar
 
@@ -474,7 +480,8 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
 
 def plotStats(residuals, reference, rmsArr, pdf='temp.pdf', \
   figTitle='Garand Atmospheres', shortWave=False, pdfObj=None, \
-  xTitle='LBLRTM', yTitle='RRTMGP - LBLRTM', forcing=True):
+  xTitle='LBLRTM', yTitle='RRTMGP - LBLRTM', \
+  hrUnits=False,forcing=True):
   """
   Plot each array in the dictionaries generated with statPDF() in a
   separate panel and calculate statistics for each panel
@@ -583,7 +590,10 @@ def plotStats(residuals, reference, rmsArr, pdf='temp.pdf', \
     if 'flux' in key:
       units = '[W m$^{-2}$]' if shortWave else '[W m$^{-2}$]'
     elif 'heating_rate' in key:
-      units = '[K day$^{-1}$]'
+      if hrUnits:
+        units = '[K day$^{-1}$]'
+      else:
+        units = '[K sec$^{-1}$]'
     else:
       units = ''
 
@@ -847,13 +857,15 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
     # them into this function
     plotStats(deltaDict, refPlotDict, allRMS, pdf=outFile, \
       figTitle=fTitle, pdfObj=pdf, forcing=kwargs['forcing'], \
-      xTitle=kwargs['xTitle'], yTitle=kwargs['yTitle'])
+      xTitle=kwargs['xTitle'], yTitle=kwargs['yTitle'], \
+      hrUnits=kwargs['yTitle'])
   # end diffCalc()
 
   # START OF statPDF()
   # get the output for plotting
   plotVars = ['band_flux_up', 'band_flux_dn', 'band_heating_rate', \
     'band_flux_net', 'p_lay', 'p_lev', 'band_lims_wvn']
+
   diffVars = plotVars[:4]
   dum = plotVars[1]
   refDict = getVars(ref, attrList=plotVars, convertHR=True)
@@ -1036,8 +1048,9 @@ if __name__ == '__main__':
     help='Generate a semilog-y plot.')
   parser.add_argument('--broad_only', action='store_true', \
     help='Only generate a broadband plot.')
+  parser.add_argument('--hr_kday', action='store_true', \
+    help='Heating rate plot generated in units K/day (standard units are K/sec).')
   args = parser.parse_args()
-
   conFile = args.config_file
   pTrop = args.tropopause_pressure
 
@@ -1059,19 +1072,21 @@ if __name__ == '__main__':
     if inBand is None:
       profPDFs(refFile, testFile, yt, tPauseP=pTrop, \
         prefix=profPrefix, atmType=aType, inBand=inBand, \
-        yLog=args.log_y, broadOnly=args.broad_only)
+        yLog=args.log_y, broadOnly=args.broad_only, \
+        hrUnits=args.hr_kday)
     else:
       for iBand in inBand:
         profPDFs(refFile, testFile, yt, tPauseP=pTrop, \
           prefix=profPrefix, atmType=aType, inBand=iBand, \
-          yLog=args.log_y)
+          yLog=args.log_y, hrUnits=args.hr_kday)
       # end iBand loop
 
       # for specified bands AND broadband
       if args.broad_only:
         profPDFs(refFile, testFile, yt, tPauseP=pTrop, \
           prefix=profPrefix, atmType=aType, \
-          yLog=args.log_y, broadOnly=args.broad_only)
+          yLog=args.log_y, broadOnly=args.broad_only, \
+          hrUnits=args.hr_kday)
       # end broadband plot
     # end inBand
   # end plot_profiles
@@ -1080,6 +1095,7 @@ if __name__ == '__main__':
   if args.plot_stats:
     statPDF(refFile, testFile, singlePDF=args.single_stat, \
       tPauseP=pTrop, xTitle=xt, yTitle=yt, prefix=statPrefix, \
-      atmType=aType, statCSV=statCSV, forcing=forcing)
+      atmType=aType, statCSV=statCSV, forcing=forcing, \
+      hrUnits=args.hr_kday)
 
 # end main()
