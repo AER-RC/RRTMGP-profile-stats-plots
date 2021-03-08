@@ -264,7 +264,7 @@ def plotProfiles(refVar, testVar, ordinate, plotDelta=False, \
 def profPDFs(ref, test, deltaStr, outDir='.', \
   shortWave=False, tPauseP=100.0, broadOnly=False, \
   prefix='PROFS_sens_key_cnt_add_min_04_dbl_r472_trynewn2opres', \
-  atmType='Garand Atmospheres', inBand=None, **kwargs):
+  atmType='Garand Atmospheres', inBand=None, iForce=0, **kwargs):
 
   """
   Plot upward flux, downward flux, and heating rate as well as the
@@ -296,16 +296,20 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
       number in the name of the output PDF file
     atmType -- float, atmosphere type (e.g., Garand)
     inBand -- int, band number (default is all)
+    iForce -- int, forcing scenario (PD, PI, PI 2xCH4, etc.)
 
     **kwargs -- overloaded arguments
       logy -- boolean, plots with a log-y axis rather than linear
       hrUnits -- boolean, convert heating rate units to K/day
   """
+
   # broadband params calculation and plotting
   plotVarsBB = ['flux_up', 'flux_dn', 'heating_rate', 'flux_net', \
     'band_lims_wvn', 'p_lay']
-  broadDictRef = getVars(ref, attrList=plotVarsBB, convertHR=kwargs['hrUnits'])
-  broadDictTest = getVars(test, attrList=plotVarsBB, convertHR=kwargs['hrUnits'])
+  broadDictRef = getVars(ref, attrList=plotVarsBB, iForce=iForce, 
+                         convertHR=kwargs['hrUnits'])
+  broadDictTest = getVars(test, attrList=plotVarsBB, iForce=iForce, 
+                          convertHR=kwargs['hrUnits'])
 
   # get the output for plotting
   plotVars = ['band_flux_up', 'band_flux_dn', 'band_heating_rate', \
@@ -314,8 +318,10 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
     'Pressure (mbar)', 'Pressure (mbar)', 'Wavenumber Range']
   dum = plotVars[1]
 
-  refDict = getVars(ref, attrList=plotVars, convertHR=kwargs['hrUnits'])
-  testDict = getVars(test, attrList=plotVars, convertHR=kwargs['hrUnits'])
+  refDict = getVars(ref, attrList=plotVars, convertHR=kwargs['hrUnits'], 
+                   iForce=iForce)
+  testDict = getVars(test, attrList=plotVars, convertHR=kwargs['hrUnits'], 
+                    iForce=iForce)
   # some quality control (consistency check)
 
     # grab dimensions of variables
@@ -481,7 +487,7 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
 def plotStats(residuals, reference, rmsArr, pdf='temp.pdf', \
   figTitle='Garand Atmospheres', shortWave=False, pdfObj=None, \
   xTitle='LBLRTM', yTitle='RRTMGP - LBLRTM', \
-  hrUnits=False,forcing=True):
+  hrUnits=False, forcing=True):
   """
   Plot each array in the dictionaries generated with statPDF() in a
   separate panel and calculate statistics for each panel
@@ -639,7 +645,7 @@ def plotStats(residuals, reference, rmsArr, pdf='temp.pdf', \
 
 def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
   tPauseP=100.0, singlePDF=False, atmType='Garand Atmospheres', \
-    statCSV=None, **kwargs):
+    statCSV=None, iForce=0, **kwargs):
   """
   Generate column RRTMGP-LBLRTM residual arrays as a function of
   associated LBLRTM measurements (for flux and heating rate) in the
@@ -668,6 +674,7 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
     atmType -- float, atmosphere type (e.g., Garand)
     statCSV -- string, filename for output statistics file (nBand x
       nColumn spreadsheet)
+    iForce -- int, forcing scenario (PD, PI, PI 2xCH4, etc.)
   """
 
   def diffCalc(dictRef, dictTest, bandNum, numCol, inVars, \
@@ -868,8 +875,8 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
 
   diffVars = plotVars[:4]
   dum = plotVars[1]
-  refDict = getVars(ref, attrList=plotVars, convertHR=True)
-  testDict = getVars(test, attrList=plotVars, convertHR=True)
+  refDict = getVars(ref, attrList=plotVars, convertHR=True, iForce=iForce)
+  testDict = getVars(test, attrList=plotVars, convertHR=True, iForce=iForce)
 
   # some quality control (consistency check)
   if refDict[dum].shape != testDict[dum].shape:
@@ -919,8 +926,8 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
   plotVars = ['flux_up', 'flux_dn', 'heating_rate', 'flux_net', \
     'band_lims_wvn', 'p_lay']
   diffVars = plotVars[:4]
-  refDict = getVars(ref, attrList=plotVars, convertHR=True)
-  testDict = getVars(test, attrList=plotVars, convertHR=True)
+  refDict = getVars(ref, attrList=plotVars, convertHR=True, iForce=iForce)
+  testDict = getVars(test, attrList=plotVars, convertHR=True, iForce=iForce)
   diffCalc(refDict, testDict, 0, nCol, diffVars, \
     pBoundary=tPauseP, csv=statCSV, broadband=True)
 
