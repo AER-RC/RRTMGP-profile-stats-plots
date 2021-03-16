@@ -7,7 +7,7 @@ from matplotlib import rc
 import matplotlib.font_manager as font
 import netCDF4 as nc
 import datetime as DT
-import ConfigParser
+import configparser
 import time # for clocking processes
 
 # for multi-page PDF files
@@ -25,7 +25,7 @@ DOWNTOTSTR = r'$F^{\downarrow}$'
 
 class refTestFluxCompare():
   def __init__(self, inDict, outDir=os.getcwd(), tPauseP=100.0, \
-    bands=None, yLog=False, broadband=False):
+    bands=None, yLog=False, broadband=False, convertHR=False):
     """
     Extract the variables we need for further calculation and plotting
 
@@ -42,6 +42,8 @@ class refTestFluxCompare():
       yLog -- boolean, plot the test-model differences on a log scale
       broadband -- boolean, plot differences integrated over all 
         bands
+      convertHR -- boolean; LBLRTM and RRTMGP HR units are
+        expected in K/s; setting this keyword converts HR to K/day.
     """
 
     ref = inDict['ref']; test = inDict['test']
@@ -53,8 +55,10 @@ class refTestFluxCompare():
       'p_lay', 'p_lev', 'band_lims_wvn', 'total_solar_irradiance']
 
     # generate dictionaries with arrays corresponding to all plotVars
-    self.refDict = compare.getVars(ref, attrList=self.plotVars)
-    self.testDict = compare.getVars(test, attrList=self.plotVars)
+    self.refDict = compare.getVars(ref, attrList=self.plotVars, 
+                                   convertHR=convertHR)
+    self.testDict = compare.getVars(test, attrList=self.plotVars, 
+                                   convertHR=convertHR)
 
     # only because i had insane RRTMGP band_flux_dif_dn values (inf)
     self.testDict['flux_dif_dn'] = \
@@ -234,7 +238,7 @@ class refTestFluxCompare():
     for iBand in range(self.numBands+1):
       isBB = (iBand == self.numBands)
       if isBB:
-        print 'Processing broadband'
+        print('Processing broadband')
 
         wnRange1 = self.refDict['band_lims_wvn'][:,0][0]
         wnRange2 = self.refDict['band_lims_wvn'][:,-1][1]
@@ -243,7 +247,7 @@ class refTestFluxCompare():
         pVars = list(self.plotVars[:6])
       else:
         bandStr = 'Band %d' % (iBand+1)
-        print 'Processing %s' % bandStr
+        print('Processing %s' % bandStr)
 
         wnRange = self.refDict['band_lims_wvn'][iBand, :]
         pVars = list(self.plotVars[6:12])
@@ -327,16 +331,18 @@ class refTestFluxCompare():
       # tropopause (downwelling, then upwelling), then heating rate at
       # surface and tropopause
       t1 = time.clock()
+      plot.subplots_adjust(hspace=0.5, wspace=0.5)
       for ctr in range(1, 7):
         abscissa = np.array(abscissae[ctr-1])
         ordinate = np.array(ordinates[ctr-1])
 
         plot.subplot(3, 2, ctr)
-        for x, y, i in zip(abscissa, ordinate, range(self.numProf)):
+        for x, y, i in zip(abscissa, ordinate, list(range(self.numProf))):
           plot.plot(x, y, 'k', marker='$%d$' % (i+1), markersize=10)
 
         plot.xlabel(xTitles[ctr-1])
         plot.ylabel(yTitles[ctr-1])
+        plot.xticks(rotation=15)
         if ctr == 3:
           mom1 = '%s = %.3f, %s = %.3f' % \
             (muStr, meanOrd[ctr-1], sdStr, sdOrd[ctr-1])
@@ -363,8 +369,8 @@ class refTestFluxCompare():
         # end error lines
       # end ctr loop
 
-		  # try to center the timestamp on the bottom of the page
-		  # all of the positioning is trial and error given my setup
+      # try to center the timestamp on the bottom of the page
+      # all of the positioning is trial and error given my setup
       fig.text(0.45, 0.01, \
         DT.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), \
         multialignment='center')
@@ -373,8 +379,9 @@ class refTestFluxCompare():
     # end band loop
 
     pdfObj.close()
-    print '%s completed' % outFile
-    print 'Stats plotting completed'
+    plot.close()
+    print('%s completed' % outFile)
+    print('Stats plotting completed')
 
   # end statPDF()
 
@@ -418,7 +425,7 @@ class refTestFluxCompare():
         (deltaStr, sw_compare.DIFSTR, sw_compare.FUNITS)]
 
     # if bands is not specified, cover all bands
-    bandList = range(nBands) if self.bands is None else self.bands-1
+    bandList = list(range(nBands)) if self.bands is None else self.bands-1
     if self.broadBand: bandList = [nBands]
     for iBand in bandList:
       # make 1 PDF per band
@@ -436,7 +443,7 @@ class refTestFluxCompare():
         wnRange = refDict['band_lims_wvn'][iBand, :]
       # endif broadOnly
 
-      print bandStr
+      print(bandStr)
 
       pdf = PdfPages(outFile)
 
@@ -447,7 +454,7 @@ class refTestFluxCompare():
         if isLast: axMean = 1
 
         # plot 1 atm column per page, 3x2 array of subfigures
-        print 'Column %d of %d' % (iCol+1, nCol)
+        print('Column %d of %d' % (iCol+1, nCol))
 
         tsi = np.nan if isLast else \
           refDict['total_solar_irradiance'][iCol]
@@ -586,16 +593,16 @@ class refTestFluxCompare():
       # end iCol loop
 
       pdf.close()
-      print '%s completed' % outFile
+      print('%s completed' % outFile)
 
-      print time.clock() - t1
+      print(time.clock() - t1)
       if self.broadBand:
-        print 'Processed broadband'
+        print('Processed broadband')
       else:
-        print 'Processed band %d' % (iBand+1)
+        print('Processed band %d' % (iBand+1))
     # end band loop
 
-    print 'Profile plotting completed'
+    print('Profile plotting completed')
 
   # end profCHARTS()
 

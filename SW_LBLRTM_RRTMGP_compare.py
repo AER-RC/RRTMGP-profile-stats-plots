@@ -12,7 +12,7 @@ from matplotlib import rc
 import matplotlib.font_manager as font
 import netCDF4 as nc
 import datetime as DT
-import ConfigParser
+import configparser
 import time # for clocking processes
 
 # for multi-page PDF files
@@ -57,7 +57,7 @@ def parseConfig(inFile):
   """
 
   # extract metadata from configuration file
-  cParse = ConfigParser.ConfigParser()
+  cParse = configparser.ConfigParser()
   cParse.read(inFile)
   cRefName = cParse.get('Plot Params', 'reference_model')
   cRefMD = cParse.get('Plot Params', 'reference_description')
@@ -172,9 +172,9 @@ def varSetup(ref, test, diffuse=False, broadband=False, charts=False):
     refDict['p_lev'][iNegRow, iNegCol] = \
       testDict['p_lev'][iNegRow, iNegCol]
 
-    print 'Replacing LBLRTM pressures with RRTMGP pressures ' + \
-      'for (lev, profile): '
-    for row, col in zip(iNegRow, iNegCol): print row, col
+    print('Replacing LBLRTM pressures with RRTMGP pressures ' + \
+      'for (lev, profile): ')
+    for row, col in zip(iNegRow, iNegCol): print(row, col)
   # endif iNeg
 
   # for SW, should only be plotting fluxes and heating rate
@@ -272,7 +272,7 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
     '%s %s Difference %s' % (deltaStr, HRSTR, HRUNITS)]
 
   # if inBand is not specified, cover all bands
-  bandList = range(nBands) if inBand is None else [inBand]
+  bandList = list(range(nBands)) if inBand is None else [inBand]
   if broadOnly: bandList = [nBands]
   for iBand in bandList:
     # flux-to-heating rate conversion DIRECT DOWN!
@@ -298,7 +298,7 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
       wnRange = refDict['band_lims_wvn'][iBand, :]
     # endif broadOnly
 
-    print bandStr
+    print(bandStr)
 
     pdf = PdfPages(outFile)
 
@@ -309,7 +309,7 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
       if isLast: axMean = 1
 
       # plot 1 atm column per page, 3x2 array of subfigures
-      print 'Column %d of %d' % (iCol+1, nCol)
+      print('Column %d of %d' % (iCol+1, nCol))
 
       tsi = np.nan if isLast else \
         refDict['total_solar_irradiance'][iCol]
@@ -409,11 +409,11 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
 
     pdf.close()
 
-    print time.clock() - t1
+    print(time.clock() - t1)
     if broadOnly:
-      print 'Processed broadband'
+      print('Processed broadband')
     else:
-      print 'Processed band %d' % (iBand+1)
+      print('Processed band %d' % (iBand+1))
   # end band loop
 # end profPDFs()
 
@@ -468,7 +468,7 @@ def profCHARTS(ref, test, deltaStr, outDir='.', \
     '%s %s Difference %s' % (deltaStr, DIFSTR, FUNITS)]
 
   # if inBand is not specified, cover all bands
-  bandList = range(nBands) if inBand is None else [inBand]
+  bandList = list(range(nBands)) if inBand is None else [inBand]
   if broadOnly: bandList = [nBands]
   for iBand in bandList:
     # make 1 PDF per band
@@ -486,7 +486,7 @@ def profCHARTS(ref, test, deltaStr, outDir='.', \
       wnRange = refDict['band_lims_wvn'][iBand, :]
     # endif broadOnly
 
-    print bandStr
+    print(bandStr)
 
     pdf = PdfPages(outFile)
 
@@ -497,7 +497,7 @@ def profCHARTS(ref, test, deltaStr, outDir='.', \
       if isLast: axMean = 1
 
       # plot 1 atm column per page, 3x2 array of subfigures
-      print 'Column %d of %d' % (iCol+1, nCol)
+      print('Column %d of %d' % (iCol+1, nCol))
 
       tsi = np.nan if isLast else \
         refDict['total_solar_irradiance'][iCol]
@@ -632,11 +632,11 @@ def profCHARTS(ref, test, deltaStr, outDir='.', \
 
     pdf.close()
 
-    print time.clock() - t1
+    print(time.clock() - t1)
     if broadOnly:
-      print 'Processed broadband'
+      print('Processed broadband')
     else:
-      print 'Processed band %d' % (iBand+1)
+      print('Processed band %d' % (iBand+1))
   # end band loop
 # end profCHARTS()
 
@@ -775,7 +775,7 @@ def statPDF(ref, test, tPauseP=100.0, atmType='Garand', \
   for iBand in range(nBands+1):
     isBB = (iBand == nBands)
     if isBB:
-      print 'Processing broadband'
+      print('Processing broadband')
 
       wnRange1 = refDict['band_lims_wvn'][:,0][0]
       wnRange2 = refDict['band_lims_wvn'][:,-1][1]
@@ -784,7 +784,7 @@ def statPDF(ref, test, tPauseP=100.0, atmType='Garand', \
       pVars = list(pVarsBB)
     else:
       bandStr = 'Band %d' % (iBand+1)
-      print 'Processing %s' % bandStr
+      print('Processing %s' % bandStr)
 
       wnRange = refDict['band_lims_wvn'][iBand, :]
     # endif iBB
@@ -879,7 +879,7 @@ def statPDF(ref, test, tPauseP=100.0, atmType='Garand', \
       ordinate = np.array(ordinates[ctr-1])
 
       plot.subplot(3, 2, ctr)
-      for x, y, i in zip(abscissa, ordinate, range(nCol)):
+      for x, y, i in zip(abscissa, ordinate, list(range(nCol))):
         plot.plot(x, y, 'k', marker='$%d$' % (i+1), markersize=10)
 
       plot.xlabel(xTitles[ctr-1])
