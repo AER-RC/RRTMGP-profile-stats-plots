@@ -22,6 +22,8 @@ import SW_LBLRTM_RRTMGP_compare as sw_compare
 DOWNDIRSTR = r'$F^{\downarrow}_{Direct}$'
 NETSTR = r'$F_{net}^{max}$'
 DOWNTOTSTR = r'$F^{\downarrow}$'
+NETDIFSTR = r'$F^{\downarrow - \uparrow}_{Diffuse}$'
+HRSTR = r'$\dot{T}$'
 
 class refTestFluxCompare():
   def __init__(self, inDict, outDir=os.getcwd(), tPauseP=100.0, \
@@ -65,6 +67,16 @@ class refTestFluxCompare():
       self.testDict['flux_dn'] - self.testDict['flux_dir_dn']
     self.testDict['band_flux_dif_dn'] = \
       self.testDict['band_flux_dn'] - self.testDict['band_flux_dir_dn']
+
+    # for g-point reduction
+    self.refDict['flux_dif_net'] = self.refDict['flux_dif_dn'] - \
+      self.refDict['flux_up']
+    self.testDict['flux_dif_net'] = self.testDict['flux_dif_dn'] - \
+      self.testDict['flux_up']
+    self.refDict['band_flux_dif_net'] = self.refDict['band_flux_dif_dn'] - \
+      self.refDict['band_flux_up']
+    self.testDict['band_flux_dif_net'] = self.testDict['band_flux_dif_dn'] - \
+      self.testDict['band_flux_up']
 
     # some quality control (consistency check)
     # also some perturbations to test file for script verification
@@ -228,8 +240,8 @@ class refTestFluxCompare():
     mSize = 0.5; oPlotSym = 'k:'
 
     # for statistics and easier string formatting
-    muStr = r'$\mu$'; muDifStr = r'$\mu_{Dif}$'
-    sdStr = r'$\sigma$'; sdDifStr = r'$\sigma_{Dif}$'
+    muStr = r'$\mu$'; muStrAbs = r'|$\mu$|'
+    sdStr = r'$\sigma$'; sdStrAbs = r'|$\sigma$|'
 
     # universal font size for this page
     font = {'size': 8}
@@ -309,7 +321,9 @@ class refTestFluxCompare():
 
       # statistics for panel titles
       meanOrd = [np.mean(o) for o in ordinates]
+      meanOrdAbs = [np.mean(np.abs(o)) for o in ordinates]
       sdOrd = [np.std(o, ddof=1) for o in ordinates]
+      sdOrdAbs = [np.std(np.abs(o), ddof=1) for o in ordinates]
 
       # remove diffuse from ordinates
       del ordinates[2]
@@ -343,16 +357,9 @@ class refTestFluxCompare():
         plot.xlabel(xTitles[ctr-1])
         plot.ylabel(yTitles[ctr-1])
         plot.xticks(rotation=15)
-        if ctr == 3:
-          mom1 = '%s = %.3f, %s = %.3f' % \
-            (muStr, meanOrd[ctr-1], sdStr, sdOrd[ctr-1])
-          mom2 = '%s = %.3f, %s = %.3f' % \
-            (muDifStr, avgDiffuse, sdDifStr, sdDiffuse)
-          plot.title('%s; %s' % (mom1, mom2))
-        else:
-          plot.title('%s = %.3f, %s = %.3f' % \
-            (muStr, meanOrd[ctr-1], sdStr, sdOrd[ctr-1]) )
-        # end ctr 3
+        plot.title('%s = %.3f, %s = %.3f\n%s = %.3f, %s = %.3f' % \
+          (muStr, meanOrd[ctr-1], sdStr, sdOrd[ctr-1], \
+           muStrAbs, meanOrdAbs[ctr-1], sdStrAbs, sdOrdAbs[ctr-1]) )
 
         # overplot 5% and 10% error lines (+/-)
         if self.forcing:
@@ -404,25 +411,19 @@ class refTestFluxCompare():
     deltaStr = self.yTitle
 
     nBands, nLev, nCol = self.numBands, self.numLev, self.numProf
-    pVars = self.plotVars[:4] if self.broadBand else \
-      self.plotVars[6:10]
-
-    # and since this was copied from another library, i exposed a flaw
-    # that the pVar order could be different. here i will conform to
-    # the convention expected in SW_LBLRTM_RRTMGP_compare.py
-    iSort = [0, 1, 3, 2]
-    pVars = [pVars[i] for i in iSort]
+    pVars = ['band_flux_dir_dn', 'band_flux_dif_net', 'band_heating_rate']
+    if self.broadBand: pVars = [p.replace('band_', '') for p in pVars]
  
     pTitles = [''] * 6
-    xTitles = ['%s %s' % (DOWNTOTSTR, sw_compare.FUNITS), \
+    xTitles = ['%s %s' % (DOWNDIRSTR, sw_compare.FUNITS), \
       '%s %s Differences %s' % \
-        (deltaStr, DOWNTOTSTR, sw_compare.FUNITS), \
-      '%s %s' % (sw_compare.FUPSTR, sw_compare.FUNITS), \
+        (deltaStr, DOWNDIRSTR, sw_compare.FUNITS), \
+      '%s %s' % (NETDIFSTR, sw_compare.FUNITS), \
       '%s %s Difference %s' % \
-        (deltaStr, sw_compare.FUPSTR, sw_compare.FUNITS), \
-      '%s %s' % (sw_compare.DIFSTR, sw_compare.FUNITS), \
+        (deltaStr, NETDIFSTR, sw_compare.FUNITS), \
+      '%s %s' % (HRSTR, sw_compare.HRUNITS), \
       '%s %s Difference %s' % \
-        (deltaStr, sw_compare.DIFSTR, sw_compare.FUNITS)]
+        (deltaStr, HRSTR, sw_compare.HRUNITS)]
 
     # if bands is not specified, cover all bands
     bandList = list(range(nBands)) if self.bands is None else self.bands-1
@@ -477,36 +478,25 @@ class refTestFluxCompare():
           if ctr in [1, 2]:
             # down fluxes in panels 1-2
             keyAbs = pVars[0]
-            keyAbsDif = pVars[1]
           elif ctr in [3, 4]:
             # up fluxes in panels 3-4
-            keyAbs = pVars[2]
+            keyAbs = pVars[1]
           else:
             # heating rates in panels 5-6
-            keyAbs = pVars[3]
+            keyAbs = pVars[2]
           # endif keyAbs
 
           # heating rate (ctr = [5, 6]) is on layers
-          keyOrd = 'p_lev' #if ctr < 5 else 'p_lay'
+          keyOrd = 'p_lev' if ctr < 5 else 'p_lay'
 
           # grab plotting arrays for given band and column
           if self.broadBand:
             if isLast:
               tAbscissa = np.mean(testDict[keyAbs], axis=axMean)
               rAbscissa = np.mean(refDict[keyAbs], axis=axMean)
-
-              if ctr in [1, 2]:
-                tAbscissaDif = np.mean(testDict[keyAbsDif], axis=axMean)
-                rAbscissaDif = np.mean(refDict[keyAbsDif], axis=axMean)
-              # endif ctr
             else:
               tAbscissa = testDict[keyAbs][:, iCol]
               rAbscissa = refDict[keyAbs][:, iCol]
-
-              if ctr in [1, 2]:
-                tAbscissaDif = testDict[keyAbsDif][:, iCol]
-                rAbscissaDif = refDict[keyAbsDif][:, iCol]
-              # endif ctr
             # endif isLast
           else:
             if isLast:
@@ -514,26 +504,13 @@ class refTestFluxCompare():
                 axis=axMean)
               rAbscissa = np.mean(refDict[keyAbs][:, :, iBand], \
                 axis=axMean)
-
-              if ctr in [1, 2]:
-                tAbscissaDif = np.mean(\
-                  testDict[keyAbsDif][:, :, iBand], axis=axMean)
-                rAbscissaDif = np.mean(\
-                  refDict[keyAbsDif][:, :, iBand], axis=axMean)
-              # endif ctr
             else:
               tAbscissa = testDict[keyAbs][:, iCol, iBand]
               rAbscissa = refDict[keyAbs][:, iCol, iBand]
-
-              if ctr in [1, 2]:
-                tAbscissaDif = testDict[keyAbsDif][:, iCol, iBand]
-                rAbscissaDif = refDict[keyAbsDif][:, iCol, iBand]
-              # endif ctr
             # endif isLast
           # endif broadOnly
 
           dAbscissa = tAbscissa - rAbscissa
-          if ctr in [1, 2]: dAbscissaDif = tAbscissaDif - rAbscissaDif
 
           if isLast:
             rOrdinate = np.mean(refDict[keyOrd], axis=axMean)
@@ -552,9 +529,6 @@ class refTestFluxCompare():
             ax = plot.gca()
             ax.axhline(self.tPauseP, color='k', linestyle=':')
             ax.axvline(0, color='k', linestyle=':')
-
-            # plot dir down and total down together
-            if ctr in [1, 2]: plot.plot(dAbscissaDif, tOrdinate, 'k--')
           else:
             # test and reference profiles
             plot.subplot(3, 2, ctr)
@@ -562,20 +536,8 @@ class refTestFluxCompare():
             plot.plot(rAbscissa, rOrdinate, 'r')
             plot.ylabel('Pressure [mbar]')
 
-            # plot dir down and total down together
-            if ctr in [1, 2]:
-              plot.plot(tAbscissaDif, tOrdinate, 'b--')
-              plot.plot(rAbscissaDif, rOrdinate, 'r--')
-              plot.legend(\
-                ['Test %s' % DOWNTOTSTR, 'Ref %s' % DOWNTOTSTR, \
-                 'Test %s' % DOWNDIRSTR, 'Ref %s' %DOWNDIRSTR], \
-                loc='upper left', numpoints=1, \
-                prop=sw_compare.font_prop)
-            else:
-              plot.legend(['Test', 'Reference'], loc='best', \
-                numpoints=1, prop=sw_compare.font_prop)
-            # endif ctr
-
+            plot.legend(['Test', 'Reference'], loc='best', \
+              numpoints=1, prop=sw_compare.font_prop)
           # end % 2
 
           yRange = [max(rOrdinate), min(rOrdinate)]
@@ -604,7 +566,7 @@ class refTestFluxCompare():
 
     print('Profile plotting completed')
 
-  # end profCHARTS()
+  # end profPDF()
 
 # end refTestFluxCompare
 
