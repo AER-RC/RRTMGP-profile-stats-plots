@@ -27,7 +27,7 @@ HRSTR = r'$\dot{T}$'
 
 class refTestFluxCompare():
   def __init__(self, inDict, outDir=os.getcwd(), tPauseP=100.0, \
-    bands=None, yLog=False, broadband=False, convertHR=False):
+    bands=None, yLog=False, broadband=False, convertHR=False, record=0):
     """
     Extract the variables we need for further calculation and plotting
 
@@ -46,6 +46,7 @@ class refTestFluxCompare():
         bands
       convertHR -- boolean; LBLRTM and RRTMGP HR units are
         expected in K/s; setting this keyword converts HR to K/day.
+      record -- int; forcing record number
     """
 
     ref = inDict['ref']; test = inDict['test']
@@ -58,9 +59,9 @@ class refTestFluxCompare():
 
     # generate dictionaries with arrays corresponding to all plotVars
     self.refDict = compare.getVars(ref, attrList=self.plotVars, 
-                                   convertHR=convertHR)
+                                   convertHR=convertHR, iForce=record)
     self.testDict = compare.getVars(test, attrList=self.plotVars, 
-                                   convertHR=convertHR)
+                                   convertHR=convertHR, iForce=record)
 
     # only because i had insane RRTMGP band_flux_dif_dn values (inf)
     self.testDict['flux_dif_dn'] = \
@@ -247,6 +248,7 @@ class refTestFluxCompare():
     font = {'size': 8}
     rc('font', **font)
 
+    errSum = 0
     for iBand in range(self.numBands+1):
       isBB = (iBand == self.numBands)
       if isBB:
@@ -316,7 +318,7 @@ class refTestFluxCompare():
         dHRStratMax.append(diffDict['diff_HR_max_strat'])
       # end column loop
 
-      ordinates = [dUpTOA, dDirSfc, dDifSfc, dDownSfc, dNetMax, \
+      ordinates = [dUpTOA, dDirSfc, dDownSfc, dNetMax, \
         dHRTropMax, dHRStratMax]
 
       # statistics for panel titles
@@ -324,11 +326,14 @@ class refTestFluxCompare():
       meanOrdAbs = [np.mean(np.abs(o)) for o in ordinates]
       sdOrd = [np.std(o, ddof=1) for o in ordinates]
       sdOrdAbs = [np.std(np.abs(o), ddof=1) for o in ordinates]
+#       temp = meanOrd[2]-meanOrd[1]
+#       print(temp)
+#       errSum += temp
 
       # remove diffuse from ordinates
-      del ordinates[2]
-      avgDiffuse = meanOrd.pop(2)
-      sdDiffuse = sdOrd.pop(2)
+#       del ordinates[2]
+#       avgDiffuse = meanOrd.pop(2)
+#       sdDiffuse = sdOrd.pop(2)
 
       abscissae = [rUpTOA, rDirSfc, rDownSfc, rNetMax, rHRTropMax, \
         rHRStratMax]
@@ -384,6 +389,7 @@ class refTestFluxCompare():
 
       pdfObj.savefig()
     # end band loop
+    print(errSum)
 
     pdfObj.close()
     plot.close()
