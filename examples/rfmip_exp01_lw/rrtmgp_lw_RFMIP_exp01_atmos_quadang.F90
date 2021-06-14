@@ -1,4 +1,4 @@
-
+colE
 subroutine stop_on_err(error_msg)
   use iso_fortran_env, only : error_unit
   character(len=*), intent(in) :: error_msg
@@ -274,31 +274,31 @@ contains
     !   in two places
     !
 
-    fluxes%flux_up      => flux_up(colS:colE,:)
-    fluxes%flux_dn      => flux_dn(colS:colE,:)
-    fluxes%flux_net     => flux_net(colS:colE,:)
-    fluxes%bnd_flux_up  => bnd_flux_up(colS:colE,:,:)
-    fluxes%bnd_flux_dn  => bnd_flux_dn(colS:colE,:,:)
-    fluxes%bnd_flux_net => bnd_flux_net(colS:colE,:,:)
+    fluxes%flux_up      => flux_up(colS:colE)
+    fluxes%flux_dn      => flux_dn(colS:colE)
+    fluxes%flux_net     => flux_net(colS:colE)
+    fluxes%bnd_flux_up  => bnd_flux_up(colS:colE)
+    fluxes%bnd_flux_dn  => bnd_flux_dn(colS:colE)
+    fluxes%bnd_flux_net => bnd_flux_net(colS:colE)
 
     call stop_on_err(gas_concs%get_subset(colS, nSubcols, gas_concs_subset))
     !
     ! Gas optics, including source functions
     !
     if(allocated(col_dry)) then
-      call stop_on_err(k_dist%gas_optics(p_lay(colS:colE,:), &
-                                         p_lev(colS:colE,:), &
-                                         t_lay(colS:colE,:), &
+      call stop_on_err(k_dist%gas_optics(p_lay(colS:colE), &
+                                         p_lev(colS:colE), &
+                                         t_lay(colS:colE), &
                                          t_sfc(colS:colE  ), &
                                          gas_concs_subset,   &
                                          optical_props,      &
                                          lw_sources,         &
-                                         tlev    = t_lev  (colS:colE,:), &
-                                         col_dry = col_dry(colS:colE,:)))
+                                         tlev    = t_lev  (colS:colE), &
+                                         col_dry = col_dry(colS:colE)))
     else
-      call stop_on_err(k_dist%gas_optics(p_lay(colS:colE,:), &
-                                         p_lev(colS:colE,:), &
-                                         t_lay(colS:colE,:), &
+      call stop_on_err(k_dist%gas_optics(p_lay(colS:colE), &
+                                         p_lev(colS:colE), &
+                                         t_lay(colS:colE), &
                                          t_sfc(colS:colE  ), &
                                          gas_concs_subset,   &
                                          optical_props,      &
