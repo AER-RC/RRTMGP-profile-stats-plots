@@ -150,6 +150,7 @@ def getVars(ncFile, attrList=DEFATTR, configDesc=None,
     elif 'heating_rate' in attr:
       # K/s to K/day conversion
       convert = 86400 if convertHR else 1
+      print('ATTR',attr)
       outDict[attr] = np.array(ncObjTmp) * convert
     else:
       outDict[attr] = np.array(ncObjTmp)
@@ -302,7 +303,7 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
     'Pressure (mbar)', 'Pressure (mbar)', 'Wavenumber Range']
   dum = plotVars[1]
   refDict = getVars(refFile, attrList=plotVars, convertHR=True)
-  testDict = getVars(testFile, attrList=plotVars)
+  testDict = getVars(testFile, attrList=plotVars, convertHR=True)
   # some quality control (consistency check)
 
   # grab dimensions of variables
@@ -869,7 +870,7 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
   diffVars = plotVars[:4]
   dum = plotVars[1]
   refDict = getVars(ref, attrList=plotVars, convertHR=True)
-  testDict = getVars(test, attrList=plotVars)
+  testDict = getVars(test, attrList=plotVars, convertHR=True)
 
   # some quality control (consistency check)
   if refDict[dum].shape != testDict[dum].shape:
@@ -920,7 +921,7 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
     'band_lims_wvn', 'p_lay']
   diffVars = plotVars[:4]
   refDict = getVars(ref, attrList=plotVars, convertHR=True)
-  testDict = getVars(test, attrList=plotVars)
+  testDict = getVars(test, attrList=plotVars, convertHR=True)
   diffCalc(refDict, testDict, 0, nCol, diffVars, \
     pBoundary=tPauseP, csv=statCSV, broadband=True)
 
