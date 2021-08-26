@@ -217,12 +217,13 @@ def plotProfiles(refVar, testVar, ordinate, plotDelta=False, \
     tPauseP -- float, tropopause pressure threshold (mbar)
     yLog -- boolean, plot ordinate axis on log scale instead of linear
   """
-
+  # yRange = [min(ordinate), 1050.]
+  yRange = [0.01, 1050.]
   if plotDelta:
     dVar = testVar-refVar
     plot.plot(dVar, ordinate, 'k')
     plot.xticks(rotation=15)
-    plot.ylim(0.1, 1050.)
+    plot.ylim(yRange)
 
     # mark the zero-difference and tropopause lines
     plot.vlines(0, ordinate.min(), ordinate.max(), linestyle='dotted')
@@ -231,7 +232,7 @@ def plotProfiles(refVar, testVar, ordinate, plotDelta=False, \
     dVar = np.array(refVar)
     plot.plot(dVar, ordinate, 'k')
     plot.xticks(rotation=15)
-    plot.ylim(0.1, 1050.)
+    plot.ylim(yRange)
 
     # mark the zero-difference and tropopause lines
     plot.vlines(0, ordinate.min(), ordinate.max(), linestyle='dotted')
@@ -239,7 +240,7 @@ def plotProfiles(refVar, testVar, ordinate, plotDelta=False, \
   else:
     plot.plot(testVar, ordinate, 'b', refVar, ordinate, 'r')
     plot.xticks(rotation=15)
-    plot.ylim(0.1, 1050.)
+    plot.ylim(yRange)
 
     # legend in top-left panel only
     if ('Upward' in pTitle) and ('Flux' in xTitle):
