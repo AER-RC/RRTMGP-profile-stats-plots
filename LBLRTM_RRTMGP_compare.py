@@ -63,31 +63,24 @@ def readConfigFile(conFile):
   utils.file_check(outDict['refFile'])
   utils.file_check(outDict['testFile'])
 
-  outDict['rForceFile'] = \
-    cParse.get('Filename Params', 'reference_force_path')
-  outDict['tForceFile'] = \
-    cParse.get('Filename Params', 'test_force_path')
-
   cRefForceName = \
     cParse.get('Plot Params', 'reference_forcing_model')
   cRefForceMD = cParse.get('Plot Params', 'reference_description')
   cTestForceName = cParse.get('Plot Params', 'test_forcing_model')
   cTestForceMD = cParse.get('Plot Params', 'test_description')
 
-  forcing = False
-  if outDict['rForceFile'] is not None and \
-     outDict['tForceFile'] is not None:
+  iForceBase = cParse.get('Forcing', 'idx_baseline', fallback=None)
+  iForceTest = cParse.get('Forcing', 'idx_test', fallback=None)
+  if iForceBase and iForceTest:
+    forcing = True
+    outDict['refFile'], outDict['testFile'] = forcingDiff(
+      outDict['refFile'], outDict['testFile'], iForceBase, iForceTest)
     outDict['xt'] = cRefForceName
     outDict['yt'] = '%s - %s' % (cTestForceName, cRefForceName)
   else:
-    forcing = True
+    forcing = False
   # endif forcing
 
-  if forcing:
-    outDict['refFile'], outDict['testFile'] = forcingDiff(
-      outDict['refFile'], outDict['testFile'], \
-      outDict['rForceFile'], outDict['tForceFile'])
-  # endif forcing
   outDict['forcing'] = bool(forcing)
 
   return outDict
@@ -149,12 +142,14 @@ def getVars(ncFile, attrList=DEFATTR, configDesc=None,
     elif 'heating_rate' in attr:
       # K/s to K/day conversion
       # units must be present in netCDF file on these variables
+      """
       try:
         hru = ncObj.variables[attr].units
       except:
         sys.exit("Heating rates units not defined in netCDF")
       if hru != 'K/s':
         sys.exit("Heating rate units not as expected [K/s]", hru)
+      """
       convert = 86400 if convertHR else 1
       outDict[attr] = np.array(ncObjTmp) * convert
     else:
@@ -935,22 +930,25 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
   if statCSV: csvFP.close()
 # end statPDF()
 
-def forcingDiff(inRefBase, inTestBase, inRefForce, inTestForce, \
-  repVars=None):
+def forcingDiff(inRefFile, inTestFile, iBase, iForce, repVars=None):
   """
   Make a copy of reference and test model netCDF files, then replace
   selected variables (for now, upwelling and downwelling flux,
   net flux, and heating rate) with Base-Forcing differences
+
+  VERY CRUDE. Only compares one scenario to one baseline. Could 
+  conceivably compare each scenario to its respective baseline. But 
+  for now, the nLev x nProf array for every record will be identical
 
   Call
     outRef, outTest = forcingDiff(inRefBase, inTestBase, \
       inRefForce, inTestForce)
 
   Input
-    inRefBase -- string, path to reference model netCDF without forcing
-    inTestBase -- string, path to test model netCDF without forcing
-    inRefForce -- string, path to reference forcing netCDF
-    inTestForce -- string, path to test forcing netCDF
+    inRefFile -- string, path to reference model netCDF 
+    inTestFile -- string, path to test model netCDF
+    iBase -- int, baseline record/scenario/experiment for forcing
+    iForce -- int, test record/scenario/experiment for forcing
 
   Output
     outRef -- string, netCDF to which Ref-Ref_Forcing parameters are
@@ -966,7 +964,7 @@ def forcingDiff(inRefBase, inTestBase, inRefForce, inTestForce, \
       the SW
   """
 
-  import subprocess as sub
+  import xarray as xa
 
   outRef = 'reference-forcing_diff.nc'
   outTest = 'test-forcing_diff.nc'
@@ -977,46 +975,20 @@ def forcingDiff(inRefBase, inTestBase, inRefForce, inTestForce, \
       'band_heating_rate', 'flux_net', 'flux_up', 'flux_dn', \
       'heating_rate']
 
-  # not sure of a Pythonic way to do this...
-  # copy the base netCDF variables
-  # was getting a "NetCDF: Start+count exceeds dimension bound"
-  # error with nccopy because of C and FORTRAN inconsistencies...
-  #sub.call(['nccopy', inRefBase, outRef])
-  #sub.call(['nccopy', inTestBase, outTest])
-  sub.call(['cp', inRefBase, outRef])
-  sub.call(['cp', inTestBase, outTest])
+  dimBase = {'record': int(iBase)}
+  dimForce = {'record': int(iForce)}
 
-  # read in three datasets (including output copies)
-  refBaseObj = nc.Dataset(inRefBase, 'r')
-  testBaseObj = nc.Dataset(inTestBase, 'r')
+  with xa.open_dataset(inRefFile) as rDS, \
+    xa.open_dataset(inTestFile) as tDS:
 
-  refForceObj = nc.Dataset(inRefForce, 'r')
-  testForceObj = nc.Dataset(inTestForce, 'r')
+    for rVar in repVars:
+      rDS[rVar] = rDS[rVar].isel(dimForce)-rDS[rVar].isel(dimBase)
+      tDS[rVar] = tDS[rVar].isel(dimForce)-tDS[rVar].isel(dimBase)
+    # end rVar loop
 
-  # allow reading and writing (r+) of the output files
-  refOutObj = nc.Dataset(outRef, 'r+')
-  testOutObj = nc.Dataset(outTest, 'r+')
-
-  # replace out variables with forcing-base differences
-  for rVar in repVars:
-    refOutObj.variables[rVar][:] = \
-      np.array(refForceObj.variables[rVar]) - \
-      np.array(refBaseObj.variables[rVar])
-    testOutObj.variables[rVar][:] = \
-      np.array(testForceObj.variables[rVar]) - \
-      np.array(testBaseObj.variables[rVar])
-  # end repVars
-
-  # now combine model descriptions
-  mdKey = 'model-description'
-  refOutObj.setncattr(mdKey, '%s\n(Forcing)\n%s' % \
-    (refBaseObj.getncattr(mdKey), refForceObj.getncattr(mdKey)))
-  testOutObj.setncattr(mdKey, '%s\n(Forcing)\n%s' % \
-    (testBaseObj.getncattr(mdKey), testForceObj.getncattr(mdKey)))
-
-  refBaseObj.close(); testBaseObj.close()
-  refForceObj.close(); testForceObj.close()
-  refOutObj.close(); testOutObj.close()
+    rDS.to_netcdf(outRef)
+    tDS.to_netcdf(outTest)
+  # endwith
 
   return outRef, outTest
 # end forcingDiff()
