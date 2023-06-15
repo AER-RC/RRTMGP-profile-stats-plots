@@ -10,6 +10,7 @@ import datetime as DT
 import configparser
 import time # for process_timeing processes
 import sys
+from tqdm import tqdm
 
 # for multi-page PDF files
 from matplotlib.backends.backend_pdf import PdfPages
@@ -332,8 +333,8 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
   # if inBand is not specified, cover all bands and include a
   # broadband page
   bandList = range(nBand+1) if inBand is None else [inBand]
-  for band in bandList:
-    print('Band %d' % (band+1))
+  for band in tqdm(bandList):
+    # print('Band %d' % (band+1))
 
     if broadOnly and (band < nBand): continue
 
@@ -353,9 +354,9 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
     t1 = time.process_time()
 
     # "a" column stands for atmospheric column
-    for aCol in range(nCol + 1):
+    for aCol in tqdm(range(nCol + 1)):
       # plot 1 atm column per page, 3x2 array of subfigures
-      print('Column %d of %d' % (aCol+1, nCol))
+      # print('Column %d of %d' % (aCol+1, nCol))
 
       colStr = 'Mean' if (aCol == nCol) else '%d' % (aCol+1)
       colStr = 'Column %s' % colStr
@@ -473,8 +474,8 @@ def profPDFs(ref, test, deltaStr, outDir='.', \
     # end aCol loop
     pdf.close()
 
-    print(time.process_time() - t1)
-    print('Processed band %d' % (band+1))
+    # print(time.process_time() - t1)
+    # print('Processed band %d' % (band+1))
 
   # end band loop
 # end profPDFs()
@@ -703,7 +704,7 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
     """
 
     if broadband:
-      print('Processing broadband')
+      # print('Processing broadband')
       wnRange = [dictRef['band_lims_wvn'][0, 0],\
                  dictRef['band_lims_wvn'][-1, -1]]
 
@@ -711,7 +712,7 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
       # broadband indexing (mostly)
       bandNum = None
     else:
-      print('Processing Band %d' % (bandNum + 1))
+      # print('Processing Band %d' % (bandNum + 1))
       wnRange = dictRef['band_lims_wvn'][bandNum, :]
     # endif broadband
 
@@ -913,8 +914,9 @@ def statPDF(ref, test, outDir='.', prefix='stats_lblrtm_rrtmgp', \
     csvWrite.writeheader()
   # end CSV initialize
 
-  for band in range(nBand): diffCalc(refDict, testDict, band, nCol, \
-    diffVars, pBoundary=tPauseP, csv=statCSV)
+  for band in tqdm(range(nBand)): 
+    diffCalc(refDict, testDict, band, nCol, 
+      diffVars, pBoundary=tPauseP, csv=statCSV)
   # end band
 
   # broadband params calculation and plotting
